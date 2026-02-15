@@ -2,6 +2,9 @@ package com.example.severstal.delivery.service;
 
 import com.example.severstal.delivery.dto.DeliveryDto;
 import com.example.severstal.delivery.entity.*;
+import com.example.severstal.delivery.exception.ProductDoesNotBelongToSupplierException;
+import com.example.severstal.delivery.exception.ProductNotFoundException;
+import com.example.severstal.delivery.exception.SupplierNotFoundException;
 import com.example.severstal.delivery.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +23,7 @@ public class DeliveryService {
     public Delivery acceptDelivery(DeliveryDto dto) {
         // Проверяем поставщика
         Supplier supplier = supplierRepository.findById(dto.getSupplierId())
-                .orElseThrow(() -> new IllegalArgumentException("Поставщик не найден"));
+                .orElseThrow(() -> new SupplierNotFoundException(dto.getSupplierId()));
 
         // Создаём поставку
         Delivery delivery = new Delivery();
@@ -30,10 +33,10 @@ public class DeliveryService {
         // Обрабатываем позиции
         dto.getItems().forEach(itemDto -> {
             Product product = productRepository.findById(itemDto.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Продукт не найден"));
+                    .orElseThrow(() -> new ProductNotFoundException(itemDto.getProductId()));
 
             if (!product.getSupplier().getId().equals(supplier.getId())) {
-                throw new IllegalArgumentException("Продукт не принадлежит поставщику");
+                throw new ProductDoesNotBelongToSupplierException(product.getId(), supplier.getId());
             }
 
             DeliveryItem item = new DeliveryItem();
